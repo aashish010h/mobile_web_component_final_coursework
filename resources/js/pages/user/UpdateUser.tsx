@@ -133,7 +133,7 @@ const UpdateUser = () => {
                     {/* Navigation */}
                     <div className="mb-3">
                         <Link
-                            to="/users"
+                            to="/dashboard/users"
                             className="text-decoration-none text-muted"
                         >
                             &larr; Back to User List

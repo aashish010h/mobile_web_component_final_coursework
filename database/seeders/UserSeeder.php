@@ -26,6 +26,13 @@ class UserSeeder extends Seeder
             'email_verified_at' => now(),
         ]);
 
+        \App\Models\Badge::insert([
+            ['name' => 'Novice Contributor', 'icon' => '🥉', 'points_required' => 10, 'created_at' => now(), 'updated_at' => now()],
+            ['name' => 'Knowledge Expert',   'icon' => '🥈', 'points_required' => 50, 'created_at' => now(), 'updated_at' => now()],
+            ['name' => 'Governance Master',  'icon' => '🥇', 'points_required' => 100, 'created_at' => now(), 'updated_at' => now()],
+            ['name' => 'Legend',             'icon' => '👑', 'points_required' => 500, 'created_at' => now(), 'updated_at' => now()],
+        ]);
+
         $this->command->info('Admin user created successfully!');
     }
 }

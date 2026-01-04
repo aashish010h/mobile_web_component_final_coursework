@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\KnowledgeAsset;
 use App\Http\Resources\KnowledgeAssetResource;
+use App\Services\GamificationService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
@@ -44,7 +45,7 @@ class KnowledgeAssetController extends Controller
     /**
      * Create a new Asset
      */
-    public function store(Request $request)
+    public function store(Request $request, GamificationService $gamification)
     {
         $validated = $request->validate([
             'title' => 'required|string|max:255',
@@ -80,6 +81,7 @@ class KnowledgeAssetController extends Controller
             if (!empty($validated['tags'])) {
                 $asset->tags()->sync($validated['tags']);
             }
+            $gamification->awardPoints(auth()->user(), 10, 'ASSET_UPLOAD');
 
             DB::commit();
 

@@ -3,6 +3,7 @@
 use App\Http\Controllers\AuthController;
 use App\Http\Controllers\CsvImportController;
 use App\Http\Controllers\CsvUploadController;
+use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\FileController;
 use App\Http\Controllers\KnowledgeAssetController;
 use App\Http\Controllers\PolicyController;
@@ -39,7 +40,7 @@ Route::middleware(['auth:sanctum'])->group(function () {
 
 
 Route::middleware(['auth:sanctum'])->group(function () {
-
+    Route::get('/dashboard-stats', [DashboardController::class, 'stats']);
     // ====================================================
     // 1. OPEN ACCESS (All Authenticated Users)
     // ====================================================

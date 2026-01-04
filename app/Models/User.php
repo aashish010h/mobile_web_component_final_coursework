@@ -36,4 +36,14 @@ class User extends Authenticatable
         'password' => 'hashed',
         'is_active' => 'boolean', // Ensures React receives true/false
     ];
+
+    public function badges()
+    {
+        return $this->belongsToMany(Badge::class, 'user_badge')->withPivot('awarded_at');
+    }
+
+    public function pointHistories()
+    {
+        return $this->hasMany(PointHistory::class); // Make sure to create this Model if needed
+    }
 }
