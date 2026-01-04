@@ -13,6 +13,10 @@ import AssetList from "@/pages/asset/AssetList";
 import CreateAsset from "@/pages/asset/CreateAsset";
 import EditAsset from "@/pages/asset/EditAsset";
 import ViewAsset from "@/pages/asset/ViewAsset";
+import Privacy from "@/pages/user/Privacy";
+import PolicyList from "@/pages/policies/PolicyList";
+import PolicyDetail from "@/pages/policies/PolicyDetail";
+import CreatePolicy from "@/pages/policies/CreatePolicy";
 //import ProtectedRoute from "./ProtectedRoutes";
 
 const router = createBrowserRouter([
@@ -37,6 +41,10 @@ const router = createBrowserRouter([
             { path: "users", element: <UserList /> },
             { path: "users/store", element: <AddUser /> },
             { path: "users/:id/edit", element: <UpdateUser /> },
+            { path: "privacy", element: <Privacy /> },
+            { path: "policies", element: <PolicyList /> },
+            { path: "policies/:id", element: <PolicyDetail /> },
+            { path: "policies/create", element: <CreatePolicy /> },
         ],
     },
 ]);

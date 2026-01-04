@@ -21,7 +21,13 @@ class KnowledgeAssetResource extends JsonResource
             // Relationships
             'author' => new UserResource($this->whenLoaded('author')),
             'tags' => $this->tags->pluck('name'), // Just send tag names for display
-
+            'policy' => $this->whenLoaded('policy', function () {
+                return [
+                    'id' => $this->policy->id,
+                    'title' => $this->policy->title,
+                    'status' => $this->policy->status,
+                ];
+            }),
             // File Handling (Only generate URL if file exists)
             'download_url' => $this->file_path ? url('/api/assets/' . $this->id . '/download') : null,
 

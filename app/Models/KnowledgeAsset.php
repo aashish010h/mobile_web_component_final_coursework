@@ -47,4 +47,9 @@ class KnowledgeAsset extends Model
     {
         return $query->where('status', 'PUBLISHED');
     }
+
+    public function policy()
+    {
+        return $this->belongsTo(GovernancePolicy::class, 'governance_policy_id');
+    }
 }

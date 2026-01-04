@@ -1,9 +1,12 @@
 import React, { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
-import { getAssets, deleteAsset } from "@/services/assetService";
+import {
+    getAssets,
+    deleteAsset,
+    downloadAssetFile,
+} from "@/services/assetService";
 import { toast, ToastContainer } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
-import { downloadAssetFile } from "@/services/assetService";
 
 const AssetList = () => {
     // --- State ---
@@ -16,13 +19,27 @@ const AssetList = () => {
     const [search, setSearch] = useState("");
     const [statusFilter, setStatusFilter] = useState("");
 
+    // --- Handlers ---
     const handleDownload = async (id, title) => {
         try {
-            // Pass the title as a fallback name
             await downloadAssetFile(id, title);
         } catch (error) {
-            // This catches the "Unauthenticated" error from the service
             toast.error(error.message || "Failed to download file.");
+        }
+    };
+
+    const handleDelete = async (id) => {
+        if (!window.confirm("Are you sure you want to archive this asset?"))
+            return;
+
+        try {
+            await deleteAsset(id);
+            toast.success("Asset archived successfully.");
+            // Refresh list keeping current filters
+            const res = await getAssets(page, search, statusFilter);
+            setAssets(res.data);
+        } catch (error) {
+            toast.error("Failed to delete asset. You may not have permission.");
         }
     };
 
@@ -42,29 +59,12 @@ const AssetList = () => {
             }
         };
 
-        // Debounce search to prevent API spam
         const timer = setTimeout(() => {
             fetchAssets();
         }, 300);
 
         return () => clearTimeout(timer);
     }, [page, search, statusFilter]);
-
-    // --- Handlers ---
-    const handleDelete = async (id) => {
-        if (!window.confirm("Are you sure you want to archive this asset?"))
-            return;
-
-        try {
-            await deleteAsset(id);
-            toast.success("Asset archived successfully.");
-            // Refresh list
-            const res = await getAssets(page, search, statusFilter);
-            setAssets(res.data);
-        } catch (error) {
-            toast.error("Failed to delete asset. You may not have permission.");
-        }
-    };
 
     // --- Helpers ---
     const getStatusBadge = (status) => {
@@ -193,7 +193,7 @@ const AssetList = () => {
                                         <td className="ps-4 py-3">
                                             <div className="d-flex flex-column">
                                                 <Link
-                                                    to={`/dashboard/assets/${asset.id}/edit`}
+                                                    to={`/dashboard/assets/${asset.id}`}
                                                     className="fw-bold text-dark text-decoration-none hover-primary"
                                                 >
                                                     {asset.title}
@@ -265,34 +265,30 @@ const AssetList = () => {
                                         <td className="text-end pe-4">
                                             <div className="btn-group">
                                                 {/* Download Button */}
-                                                <td className="text-end pe-4">
-                                                    <div className="btn-group">
-                                                        {/* REPLACED THE <a> TAG WITH THIS BUTTON */}
-                                                        {asset.download_url && (
-                                                            <button
-                                                                onClick={() =>
-                                                                    handleDownload(
-                                                                        asset.id,
-                                                                        asset.title
-                                                                    )
-                                                                }
-                                                                className="btn btn-sm btn-white border hover-shadow"
-                                                                title="Download File"
-                                                            >
-                                                                ⬇️
-                                                            </button>
-                                                        )}
-                                                        {/* ... edit and delete buttons ... */}
-                                                    </div>
-                                                </td>
-                                                {/* Edit Button */}
+                                                {asset.download_url && (
+                                                    <button
+                                                        onClick={() =>
+                                                            handleDownload(
+                                                                asset.id,
+                                                                asset.title
+                                                            )
+                                                        }
+                                                        className="btn btn-sm btn-white border hover-shadow"
+                                                        title="Download File"
+                                                    >
+                                                        ⬇️
+                                                    </button>
+                                                )}
+
+                                                {/* View Button */}
                                                 <Link
-                                                    to={`/dashboard/assets/${asset.id}/view`}
+                                                    to={`/dashboard/assets/${asset.id}`}
                                                     className="btn btn-sm btn-white border hover-shadow"
-                                                    title="View"
+                                                    title="View Details"
                                                 >
                                                     👀
                                                 </Link>
+
                                                 {/* Edit Button */}
                                                 <Link
                                                     to={`/dashboard/assets/${asset.id}/edit`}
@@ -302,7 +298,7 @@ const AssetList = () => {
                                                     ✏️
                                                 </Link>
 
-                                                {/* Delete (Only visual, backend checks perm) */}
+                                                {/* Archive Button */}
                                                 <button
                                                     onClick={() =>
                                                         handleDelete(asset.id)

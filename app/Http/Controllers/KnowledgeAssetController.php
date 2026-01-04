@@ -14,7 +14,7 @@ class KnowledgeAssetController extends Controller
 {
     public function index(Request $request)
     {
-        $query = KnowledgeAsset::with(['author', 'tags']);
+        $query = KnowledgeAsset::with(['author', 'tags', 'policy']);
 
         // 1. Search by Title or Summary
         $query->when($request->search, function ($q, $search) {
@@ -54,6 +54,7 @@ class KnowledgeAssetController extends Controller
             'tags' => 'array', // Array of Tag IDs
             'tags.*' => 'exists:tags,id',
             'file' => 'nullable|file|mimes:pdf,doc,docx,ppt,pptx|max:10240', // Max 10MB
+            'governance_policy_id' => 'nullable|exists:governance_policies,id',
         ]);
 
         DB::beginTransaction(); // Ensure Atomicity
@@ -65,7 +66,7 @@ class KnowledgeAssetController extends Controller
                 // Store in 'storage/app/public/assets'
                 $filePath = $request->file('file')->store('assets', 'public');
             }
-
+            $policyId = $request->governance_policy_id;
             // 2. Create Record
             $asset = KnowledgeAsset::create([
                 'author_id' => auth()->id(),
@@ -74,6 +75,7 @@ class KnowledgeAssetController extends Controller
                 'summary' => $validated['summary'],
                 'content_body' => $validated['content_body'] ?? null,
                 'file_path' => $filePath,
+                'governance_policy_id' => $policyId,
                 'status' => 'DRAFT', // Always start as Draft
             ]);
 
@@ -100,7 +102,7 @@ class KnowledgeAssetController extends Controller
      */
     public function show($id)
     {
-        $asset = KnowledgeAsset::with(['author', 'tags'])->findOrFail($id);
+        $asset = KnowledgeAsset::with(['author', 'tags', 'policy'])->findOrFail($id);
 
         // Increment View Count (simple implementation)
         $asset->increment('view_count');

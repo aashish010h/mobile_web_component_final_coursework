@@ -13,15 +13,15 @@ const ViewAsset = () => {
     const navigate = useNavigate();
     const [asset, setAsset] = useState(null);
     const [loading, setLoading] = useState(true);
+
     const handleDownload = async () => {
         try {
-            // Pass the title as a fallback name
             await downloadAssetFile(id, asset.title);
         } catch (error) {
-            // This catches the "Unauthenticated" error from the service
             toast.error(error.message || "Failed to download file.");
         }
     };
+
     // --- Styles ---
     const styles = {
         header: { backgroundColor: "#003366", color: "#ffffff" },
@@ -39,7 +39,6 @@ const ViewAsset = () => {
         const fetchAsset = async () => {
             try {
                 const res = await getAsset(id);
-                // Handle nested resource structure (data.data vs data)
                 setAsset(res.data || res);
             } catch (error) {
                 toast.error("Asset not found or access denied.");
@@ -100,7 +99,6 @@ const ViewAsset = () => {
                 >
                     &larr; Back to Repository
                 </Link>
-                {/* Admin Actions Toolbar */}
                 <div className="btn-group">
                     <Link
                         to={`/dashboard/assets/${id}/edit`}
@@ -122,6 +120,22 @@ const ViewAsset = () => {
                 <div className="col-lg-8">
                     <div className="card shadow-sm border-0 rounded-3 h-100">
                         <div className="card-body p-4 p-md-5">
+                            {/* [NEW] Rejection Reason Alert */}
+                            {asset.status === "DRAFT" &&
+                                asset.rejection_reason && (
+                                    <div className="alert alert-danger border-danger d-flex align-items-start gap-3 mb-4">
+                                        <span className="fs-4">🛑</span>
+                                        <div>
+                                            <h6 className="fw-bold mb-1">
+                                                Returned for Revision
+                                            </h6>
+                                            <p className="mb-0 small">
+                                                {asset.rejection_reason}
+                                            </p>
+                                        </div>
+                                    </div>
+                                )}
+
                             {/* Title Header */}
                             <div className="mb-4 border-bottom pb-4">
                                 <div className="d-flex align-items-start justify-content-between gap-3">
@@ -152,7 +166,7 @@ const ViewAsset = () => {
                                 </p>
                             </div>
 
-                            {/* Main Body (Rich Text Placeholder) */}
+                            {/* Main Body */}
                             <div className="mt-4">
                                 <h5 className="fw-bold mb-3">Asset Details</h5>
                                 {asset.content_body ? (
@@ -175,13 +189,40 @@ const ViewAsset = () => {
 
                 {/* RIGHT COLUMN: Metadata & Actions */}
                 <div className="col-lg-4">
+                    {/* [NEW] Compliance / Policy Link Section */}
+                    <div className="card shadow-sm border-0 rounded-3 mb-3">
+                        <div className="card-body p-4">
+                            <h6 className="fw-bold mb-3">
+                                Governance & Compliance
+                            </h6>
+                            {asset.policy ? (
+                                <div className="p-3 bg-light border rounded border-start border-4 border-success">
+                                    <div className="small text-muted text-uppercase fw-bold mb-1">
+                                        Adheres To
+                                    </div>
+                                    <Link
+                                        to={`/dashboard/policies/${asset.policy.id}`}
+                                        className="fw-bold text-success text-decoration-none"
+                                    >
+                                        ⚖️ {asset.policy.title}
+                                    </Link>
+                                </div>
+                            ) : (
+                                <div className="text-muted small fst-italic">
+                                    This asset is not explicitly linked to a
+                                    specific governance policy.
+                                </div>
+                            )}
+                        </div>
+                    </div>
+
                     {/* File Download Card */}
                     <div className="card shadow-sm border-0 rounded-3 mb-3 bg-white">
                         <div className="card-body p-4">
                             <h6 className="fw-bold mb-3">Attached File</h6>
                             {asset.download_url ? (
                                 <div className="d-grid">
-                                    <a
+                                    <button
                                         onClick={handleDownload}
                                         className="btn btn-primary py-2 fw-bold shadow-sm"
                                         style={{
@@ -190,7 +231,7 @@ const ViewAsset = () => {
                                         }}
                                     >
                                         ⬇️ Download Document
-                                    </a>
+                                    </button>
                                     <div className="text-center mt-2 small text-muted">
                                         Securely encrypted
                                     </div>
@@ -207,10 +248,10 @@ const ViewAsset = () => {
                     <div className="card shadow-sm border-0 rounded-3">
                         <div className="card-body p-4">
                             <h6 className="fw-bold mb-4 border-bottom pb-2">
-                                Governance Data
+                                Data Points
                             </h6>
 
-                            {/* Author */}
+                            {/* Author & Badges */}
                             <div className="mb-3">
                                 <div style={styles.metaLabel}>Author</div>
                                 <div className="d-flex align-items-center mt-1">
@@ -232,6 +273,18 @@ const ViewAsset = () => {
                                             {asset.author?.department ||
                                                 "Unassigned"}
                                         </div>
+                                        {/* [NEW] Author Badges */}
+                                        <div className="d-flex gap-1 mt-1">
+                                            {asset.author?.badges?.map((b) => (
+                                                <span
+                                                    key={b.id}
+                                                    title={b.name}
+                                                    style={{ cursor: "help" }}
+                                                >
+                                                    {b.icon}
+                                                </span>
+                                            ))}
+                                        </div>
                                     </div>
                                 </div>
                             </div>
@@ -241,7 +294,9 @@ const ViewAsset = () => {
                                 <div className="col-6">
                                     <div style={styles.metaLabel}>Created</div>
                                     <div className="fw-medium text-dark">
-                                        {asset.created_at}
+                                        {new Date(
+                                            asset.created_at
+                                        ).toLocaleDateString("en-GB")}
                                     </div>
                                 </div>
                                 <div className="col-6">
@@ -249,18 +304,10 @@ const ViewAsset = () => {
                                         Last Updated
                                     </div>
                                     <div className="fw-medium text-dark">
-                                        {asset.updated_at}
+                                        {new Date(
+                                            asset.updated_at
+                                        ).toLocaleDateString("en-GB")}
                                     </div>
-                                </div>
-                            </div>
-
-                            {/* Stats */}
-                            <div className="mb-3">
-                                <div style={styles.metaLabel}>Impact</div>
-                                <div className="d-flex align-items-center gap-2 mt-1">
-                                    <span className="badge bg-light text-dark border">
-                                        👁️ {asset.view_count || 0} Views
-                                    </span>
                                 </div>
                             </div>
 
@@ -281,7 +328,7 @@ const ViewAsset = () => {
                                         ))
                                     ) : (
                                         <span className="text-muted small">
-                                            No tags assigned
+                                            No tags
                                         </span>
                                     )}
                                 </div>

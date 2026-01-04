@@ -1,9 +1,10 @@
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { useForm } from "react-hook-form";
 import { ToastContainer, toast } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 import { createAsset } from "@/services/assetService";
+import { getPolicies } from "@/services/apiService";
 
 const CreateAsset = () => {
     const navigate = useNavigate();
@@ -43,6 +44,7 @@ const CreateAsset = () => {
         // 1. Append Text Data
         formData.append("title", data.title);
         formData.append("summary", data.summary);
+        formData.append("governance_policy_id", data.governance_policy_id);
 
         // 2. Append File (only if selected)
         if (data.file && data.file[0]) {
@@ -74,10 +76,25 @@ const CreateAsset = () => {
         }
     };
 
+    const [policies, setPolicies] = useState([]);
+
+    // 2. Fetch Policies on load
+    useEffect(() => {
+        const loadPolicies = async () => {
+            try {
+                const data = await getPolicies();
+                // Only show ACTIVE policies to link against? Or all? Usually Active.
+                setPolicies(data.filter((p) => p.status === "ACTIVE"));
+            } catch (e) {
+                console.error("Failed to load policies");
+            }
+        };
+        loadPolicies();
+    }, []);
+
     return (
         <div className="container mt-5 mb-5">
             <ToastContainer />
-
             <div className="row justify-content-center">
                 <div className="col-lg-8 col-md-10">
                     <div className="mb-3">
@@ -130,6 +147,33 @@ const CreateAsset = () => {
                                             {errors.title.message}
                                         </div>
                                     )}
+                                </div>
+
+                                <div className="mb-4">
+                                    <label className="form-label fw-semibold">
+                                        Governance Compliance
+                                    </label>
+                                    <select
+                                        className="form-select"
+                                        {...register("governance_policy_id")}
+                                    >
+                                        <option value="">
+                                            -- Does not adhere to specific
+                                            policy --Guest User
+                                        </option>
+                                        {policies?.map((policy) => (
+                                            <option
+                                                key={policy.id}
+                                                value={policy.id}
+                                            >
+                                                {policy.title}
+                                            </option>
+                                        ))}
+                                    </select>
+                                    <div className="form-text">
+                                        Does this document support a specific
+                                        organizational policy?
+                                    </div>
                                 </div>
 
                                 <div className="mb-3">
