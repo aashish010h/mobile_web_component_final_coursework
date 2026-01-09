@@ -1,4 +1,4 @@
-# Digital Knowledge Network (DKN) 🚀
+# Digital Knowledge Network (DKN) By Aashish Giri🚀
 
 Full-stack web application using **Laravel 12** (backend) and **React 18 + Vite** (frontend) in the **same repository/folder**.
 
