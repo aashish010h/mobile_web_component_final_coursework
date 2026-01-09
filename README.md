@@ -1,25 +1,43 @@
-# 🛡️ Digital Knowledge Network (DKN)
+# Digital Knowledge Network (DKN) 🚀
 
-A robust, full-stack application for managing organizational knowledge, user roles, and governance policies. Built with **Laravel 11 (API)** and **React 18 (Frontend)**.
-
-## 📋 Prerequisites
-
-Ensure you have the following installed on your local machine before starting:
-
--   **PHP** >= 8.2
--   **Composer** (Dependency Manager for PHP)
--   **Node.js** >= 18.0 & **NPM**
--   **MySQL** or **MariaDB**
+Full-stack web application using **Laravel 12** (backend) and **React 18 + Vite** (frontend) in the **same repository/folder**.
 
 ---
 
-## 🚀 Installation Guide
+## 🛠 Tech Stack
 
-Follow these steps to set up the project locally.
+- Backend: Laravel 12 (PHP 8.2+)
+- Frontend: React 18 + Vite
+- Database: MySQL
+- Package Managers: Composer & NPM
 
-### 1. Clone the Repository
+---
+
+---
+
+## ⚡ Requirements
+
+- PHP 8.2+
+- Composer
+- Node.js 18+
+- NPM
+- MySQL
+
+---
+
+## ⚙️ Installation
 
 ```bash
-git clone [https://github.com/your-username/your-repo-name.git](https://github.com/your-username/your-repo-name.git)
-cd your-repo-name
-```
+git clone https://github.com/aashish010h/mobile_web_component_final_coursework.git
+cd mobile_web_component_final_coursework
+composer install
+npm install
+cp .env.example .env
+php artisan key:generate
+php artisan migrate --seed
+php artisan serve
+npm run dev
+
+
+Open in browser: http://127.0.0.1:8000
+
