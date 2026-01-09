@@ -3,10 +3,13 @@ import { NavLink } from "react-router-dom";
 import { useAuthStore } from "@/store/useAuthStore";
 
 const Sidebar = () => {
+    // ACCESS: Check your DevTools. Usually it is user.role, not user.data.role
     const { user } = useAuthStore();
+    const userRole = user?.role || user?.data?.role;
 
     // 1. Define the Menu Structure
     const navItems = [
+        // --- COMMON ---
         {
             path: "/dashboard",
             label: "Overview",
@@ -23,15 +26,38 @@ const Sidebar = () => {
             path: "/dashboard/policies",
             label: "Governance Policies",
             icon: "⚖️",
-            allowedRoles: null, // Everyone needs to read laws
+            allowedRoles: null, // Everyone reads policies
         },
-        // --- RESTRICTED ITEMS ---
+
+        // --- MANAGEMENT ZONES ---
+        {
+            path: "/dashboard/pending-assets",
+            label: "Pending Reviews",
+            icon: "✅",
+            // Matches your 'review' backend route permissions
+            allowedRoles: ["SUPERVISOR", "ADMIN", "GOVERNANCE_COUNCIL"],
+        },
+        {
+            path: "/dashboard/audits",
+            label: "Audit Logs",
+            icon: "🕵️‍♂️",
+            allowedRoles: ["ADMIN", "GOVERNANCE_COUNCIL"],
+        },
+        {
+            path: "/dashboard/ai-recommended-assets",
+            label: "AI Recommendation",
+            icon: "🤖",
+            allowedRoles: null,
+        },
         {
             path: "/dashboard/users",
             label: "User Management",
             icon: "👥",
-            allowedRoles: ["ADMIN"], // ONLY Admin sees this
+            // Matches your 'UserController' backend route
+            allowedRoles: ["ADMIN"],
         },
+
+        // --- COMPLIANCE ---
         {
             path: "/dashboard/privacy",
             label: "Privacy & GDPR",
@@ -40,18 +66,20 @@ const Sidebar = () => {
         },
     ];
 
-    // 2. Filter logic: Does the user have the right role?
-    // If allowedRoles is null, everyone sees it.
-    // If allowedRoles is set, the user's role must be in the list.
+    // 2. Filter logic
     const visibleItems = navItems.filter((item) => {
         if (!item.allowedRoles) return true;
-        return item.allowedRoles.includes(user?.data?.role);
+        return item.allowedRoles.includes(userRole);
     });
 
     return (
-        <div className="bg-white border-end h-100" id="sidebar-wrapper">
-            <div className="sidebar-heading border-bottom bg-light fw-bold text-center py-4 text-dark fs-5">
-                🛡️ UWL Governance
+        <div
+            className="bg-white border-end h-100 shadow-sm"
+            id="sidebar-wrapper"
+            style={{ minHeight: "100vh" }}
+        >
+            <div className="sidebar-heading border-bottom bg-white fw-bold text-center py-4 text-primary fs-5">
+                🛡️ Velion DKN
             </div>
 
             <div className="list-group list-group-flush pt-2">
@@ -59,31 +87,51 @@ const Sidebar = () => {
                     <NavLink
                         key={item.path}
                         to={item.path}
-                        end={item.path === "/dashboard"} // Exact match for home
+                        end={item.path === "/dashboard"}
                         className={({ isActive }) =>
-                            `list-group-item list-group-item-action border-0 py-3 px-4 ${
+                            `list-group-item list-group-item-action border-0 py-3 px-4 d-flex align-items-center ${
                                 isActive
                                     ? "bg-primary bg-opacity-10 text-primary border-end border-4 border-primary fw-bold"
-                                    : "text-secondary"
+                                    : "text-secondary hover-bg-light"
                             }`
                         }
                     >
-                        <span className="me-3">{item.icon}</span>
-                        {item.label}
+                        <span className="me-3 fs-5">{item.icon}</span>
+                        <span>{item.label}</span>
                     </NavLink>
                 ))}
             </div>
 
-            {/* Optional: User Role Badge at bottom */}
-            <div className="mt-auto p-4 border-top">
+            {/* User Role Badge */}
+            <div className="mt-auto p-4 border-top bg-light">
                 <small
                     className="text-muted text-uppercase fw-bold"
-                    style={{ fontSize: "0.7rem" }}
+                    style={{ fontSize: "0.65rem" }}
                 >
-                    Current Access
+                    Logged in as
                 </small>
-                <div className="badge bg-secondary d-block mt-1 py-2">
-                    {user?.data?.role?.replace("_", " ") || "GUEST"}
+                <div className="d-flex align-items-center mt-2">
+                    <div
+                        className="rounded-circle bg-primary text-white d-flex align-items-center justify-content-center me-2"
+                        style={{
+                            width: "32px",
+                            height: "32px",
+                            fontSize: "14px",
+                        }}
+                    >
+                        {user?.name?.charAt(0) || "U"}
+                    </div>
+                    <div className="lh-1">
+                        <div className="fw-bold text-dark small">
+                            {user?.name || "Guest"}
+                        </div>
+                        <span
+                            className="badge bg-secondary mt-1"
+                            style={{ fontSize: "0.6rem" }}
+                        >
+                            {userRole?.replace("_", " ") || "GUEST"}
+                        </span>
+                    </div>
                 </div>
             </div>
         </div>

@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\AuditLogController;
 use App\Http\Controllers\AuthController;
 use App\Http\Controllers\CsvImportController;
 use App\Http\Controllers\CsvUploadController;
@@ -89,5 +90,9 @@ Route::middleware(['auth:sanctum'])->group(function () {
 
         // Hard Deletes (Only Admins can wipe data)
         Route::delete('/assets/{id}', [KnowledgeAssetController::class, 'destroy']);
+    });
+
+    Route::middleware(['auth:sanctum', 'role:ADMIN,GOVERNANCE_COUNCIL'])->group(function () {
+        Route::get('/audit-logs', [AuditLogController::class, 'index']);
     });
 });

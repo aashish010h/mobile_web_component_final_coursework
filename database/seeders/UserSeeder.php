@@ -55,28 +55,28 @@ class UserSeeder extends Seeder
                 'role' => 'ADMIN',
                 'department' => 'IT Services',
                 'password' => Hash::make('password'),
-                'points' => 120
+                'points' => 10
             ]),
             'supervisor' => User::firstOrCreate(['email' => 'sarah.supervisor@uwl.ac.uk'], [
                 'name' => 'Sarah Supervisor',
                 'role' => 'SUPERVISOR',
                 'department' => 'Human Resources',
                 'password' => Hash::make('password'),
-                'points' => 350
+                'points' => 40
             ]),
             'champion' => User::firstOrCreate(['email' => 'david.champ@uwl.ac.uk'], [
                 'name' => 'David Champion',
                 'role' => 'KNOWLEDGE_CHAMPION',
                 'department' => 'Academic Quality',
                 'password' => Hash::make('password'),
-                'points' => 600
+                'points' => 60
             ]),
             'council' => User::firstOrCreate(['email' => 'emma.council@uwl.ac.uk'], [
                 'name' => 'Emma Council',
                 'role' => 'GOVERNANCE_COUNCIL',
                 'department' => 'Executive Office',
                 'password' => Hash::make('password'),
-                'points' => 50
+                'points' => 0
             ]),
             'employee' => User::firstOrCreate(['email' => 'john.doe@uwl.ac.uk'], [
                 'name' => 'John Doe',

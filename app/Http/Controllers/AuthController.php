@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Http\Requests\Login\LoginRequest;
 use App\Http\Resources\UserResource;
+use App\Models\AuditLog;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use App\Models\User;
@@ -23,6 +24,13 @@ class AuthController extends Controller
         }
 
         $token = $user->createToken('AuthToken')->plainTextToken;
+
+        AuditLog::create([
+            'user_id'    => $user->id,
+            'action'     => 'LOGIN_SUCCESS',
+            'ip_address' => $request->ip(),
+            'details'    => ['browser' => $request->userAgent()]
+        ]);
 
         return response()->json([
             'user' => $user->only('id', 'name', 'email'),

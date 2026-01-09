@@ -8,16 +8,11 @@ import {
 import { toast, ToastContainer } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 
-const AssetList = () => {
+const AssetList = ({ isPending, isAi }) => {
     // --- State ---
     const [assets, setAssets] = useState([]);
     const [meta, setMeta] = useState(null);
     const [loading, setLoading] = useState(true);
-
-    // --- Filters ---
-    const [page, setPage] = useState(1);
-    const [search, setSearch] = useState("");
-    const [statusFilter, setStatusFilter] = useState("");
 
     // --- Handlers ---
     const handleDownload = async (id, title) => {
@@ -42,6 +37,11 @@ const AssetList = () => {
             toast.error("Failed to delete asset. You may not have permission.");
         }
     };
+
+    // --- Filters ---
+    const [page, setPage] = useState(1);
+    const [search, setSearch] = useState("");
+    const [statusFilter, setStatusFilter] = useState("");
 
     // --- Fetch Data ---
     useEffect(() => {
@@ -84,6 +84,12 @@ const AssetList = () => {
         }
     };
 
+    useEffect(() => {
+        if (isPending) {
+            setStatusFilter("PENDING_REVIEW");
+        }
+    }, []);
+
     return (
         <div className="container-fluid p-4">
             <ToastContainer />
@@ -91,7 +97,11 @@ const AssetList = () => {
             {/* Header Section */}
             <div className="d-flex justify-content-between align-items-center mb-4">
                 <div>
-                    <h4 className="fw-bold text-dark mb-1">Knowledge Base</h4>
+                    <h4 className="fw-bold text-dark mb-1">
+                        {isAi
+                            ? " Artificial Intelligence Recommended Knowledge Base "
+                            : "Knowledge Base"}
+                    </h4>
                     <p className="text-muted small mb-0">
                         Manage policies, guides, and organisational assets.
                     </p>
@@ -193,7 +203,7 @@ const AssetList = () => {
                                         <td className="ps-4 py-3">
                                             <div className="d-flex flex-column">
                                                 <Link
-                                                    to={`/dashboard/assets/${asset.id}`}
+                                                    to={`/dashboard/assets/${asset.id}/view`}
                                                     className="fw-bold text-dark text-decoration-none hover-primary"
                                                 >
                                                     {asset.title}
@@ -282,7 +292,7 @@ const AssetList = () => {
 
                                                 {/* View Button */}
                                                 <Link
-                                                    to={`/dashboard/assets/${asset.id}`}
+                                                    to={`/dashboard/assets/${asset.id}/view`}
                                                     className="btn btn-sm btn-white border hover-shadow"
                                                     title="View Details"
                                                 >

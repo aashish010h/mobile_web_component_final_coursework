@@ -4,8 +4,10 @@ namespace App\Http\Controllers;
 
 use App\Models\KnowledgeAsset;
 use App\Http\Resources\KnowledgeAssetResource;
+use App\Models\AuditLog;
 use App\Services\GamificationService;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 use Illuminate\Support\Facades\DB;
@@ -85,6 +87,14 @@ class KnowledgeAssetController extends Controller
             }
             $gamification->awardPoints(auth()->user(), 10, 'ASSET_UPLOAD');
 
+            AuditLog::create([
+                'user_id'     => Auth::id(),
+                'action'      => 'ASSET_CREATE',
+                'target_type' => KnowledgeAsset::class,
+                'target_id'   => $asset->id,
+                'ip_address'  => $request->ip()
+            ]);
+
             DB::commit();
 
             return new KnowledgeAssetResource($asset);
@@ -116,10 +126,22 @@ class KnowledgeAssetController extends Controller
     public function update(Request $request, $id)
     {
         $asset = KnowledgeAsset::findOrFail($id);
+        $user = auth()->user();
 
-        // Security: Only Author or Admin can update
-        if ($asset->author_id !== auth()->id() && auth()->user()->role !== 'ADMIN') {
-            return response()->json(['message' => 'Unauthorized'], 403);
+        if ($asset->author_id !== $user->id && !in_array($user->role, ['SUPERVISOR', 'ADMIN'])) {
+            return response()->json(['message' => 'Unauthorized Access'], 403);
+        }
+
+        // 2. STATUS PROTECTION: Is the user trying to change the Status?
+        if ($request->has('status') && $request->status !== $asset->status) {
+
+            // Only Admin and Supervisor can change status (Approve/Publish)
+            if (!in_array($user->role, ['ADMIN', 'SUPERVISOR'])) {
+                return response()->json([
+                    'message' => 'Forbidden. Only Supervisors or Admins can change the status.',
+                    'error_code' => 'STATUS_CHANGE_DENIED'
+                ], 403);
+            }
         }
 
         $validated = $request->validate([
@@ -149,7 +171,13 @@ class KnowledgeAssetController extends Controller
             if ($request->has('tags')) {
                 $asset->tags()->sync($validated['tags']);
             }
-
+            AuditLog::create([
+                'user_id'     => Auth::id(),
+                'action'      => 'ASSET_UPDATE',
+                'target_type' => KnowledgeAsset::class,
+                'target_id'   => $asset->id,
+                'ip_address'  => $request->ip()
+            ]);
             DB::commit();
             return new KnowledgeAssetResource($asset);
         } catch (\Exception $e) {
@@ -161,7 +189,7 @@ class KnowledgeAssetController extends Controller
     /**
      * Delete (Soft Delete)
      */
-    public function destroy($id)
+    public function destroy(Request $request, $id)
     {
         $asset = KnowledgeAsset::findOrFail($id);
 
@@ -171,20 +199,34 @@ class KnowledgeAssetController extends Controller
 
         $asset->delete(); // Soft delete (file remains in storage)
 
+        AuditLog::create([
+            'user_id'     => Auth::id(),
+            'action'      => 'ASSET_DELETE',
+            'target_type' => KnowledgeAsset::class,
+            'target_id'   => $asset->id,
+            'ip_address'  => $request->ip()
+        ]);
+
         return response()->json(['message' => 'Asset archived successfully']);
     }
 
     /**
      * Download File
      */
-    public function download($id)
+    public function download(Request $request, $id)
     {
         $asset = KnowledgeAsset::findOrFail($id);
 
         if (!$asset->file_path || !Storage::disk('public')->exists($asset->file_path)) {
             return response()->json(['message' => 'File not found'], 404);
         }
-
+        AuditLog::create([
+            'user_id'     => Auth::id(),
+            'action'      => 'ASSET_DOWNLOAD',
+            'target_type' => KnowledgeAsset::class,
+            'target_id'   => $asset->id,
+            'ip_address'  => $request->ip()
+        ]);
         return Storage::disk('public')->download($asset->file_path, $asset->title . '.' . pathinfo($asset->file_path, PATHINFO_EXTENSION));
     }
 }

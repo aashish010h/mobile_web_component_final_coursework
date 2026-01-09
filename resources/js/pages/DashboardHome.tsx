@@ -109,9 +109,6 @@ const DashboardHome = () => {
                     </div>
                 </div>
                 <div className="col-md-3">
-                    <Leaderboard users={stats?.leaderboard} />
-                </div>
-                <div className="col-md-3">
                     <div
                         className="card border-0 shadow-sm h-100"
                         style={{ borderLeft: "4px solid #20c997" }}
@@ -202,45 +199,49 @@ const DashboardHome = () => {
 
                 {/* GRAPH 2: Bar Chart (Action Items) */}
                 <div className="col-md-6">
-                    <div className="card border-0 shadow-sm h-100">
-                        <div className="card-header bg-white border-0 fw-bold">
-                            ⚠️ Governance Action Items
-                        </div>
-                        <div className="card-body" style={{ height: "300px" }}>
-                            <ResponsiveContainer width="100%" height="100%">
-                                <BarChart
-                                    data={barData}
-                                    margin={{
-                                        top: 20,
-                                        right: 30,
-                                        left: 20,
-                                        bottom: 5,
-                                    }}
+                    <Leaderboard users={stats?.counts.leaderboard} />
+                </div>
+            </div>
+
+            <div className="col-md-6">
+                <div className="card border-0 shadow-sm h-100">
+                    <div className="card-header bg-white border-0 fw-bold">
+                        ⚠️ Governance Action Items
+                    </div>
+                    <div className="card-body" style={{ height: "300px" }}>
+                        <ResponsiveContainer width="100%" height="100%">
+                            <BarChart
+                                data={barData}
+                                margin={{
+                                    top: 20,
+                                    right: 30,
+                                    left: 20,
+                                    bottom: 5,
+                                }}
+                            >
+                                <XAxis
+                                    dataKey="name"
+                                    stroke="#8884d8"
+                                    fontSize={12}
+                                    tickLine={false}
+                                    axisLine={false}
+                                />
+                                <YAxis />
+                                <Tooltip cursor={{ fill: "transparent" }} />
+                                <Bar
+                                    dataKey="value"
+                                    name="Count"
+                                    radius={[4, 4, 0, 0]}
                                 >
-                                    <XAxis
-                                        dataKey="name"
-                                        stroke="#8884d8"
-                                        fontSize={12}
-                                        tickLine={false}
-                                        axisLine={false}
-                                    />
-                                    <YAxis />
-                                    <Tooltip cursor={{ fill: "transparent" }} />
-                                    <Bar
-                                        dataKey="value"
-                                        name="Count"
-                                        radius={[4, 4, 0, 0]}
-                                    >
-                                        {barData.map((entry, index) => (
-                                            <Cell
-                                                key={`cell-${index}`}
-                                                fill={entry.color}
-                                            />
-                                        ))}
-                                    </Bar>
-                                </BarChart>
-                            </ResponsiveContainer>
-                        </div>
+                                    {barData.map((entry, index) => (
+                                        <Cell
+                                            key={`cell-${index}`}
+                                            fill={entry.color}
+                                        />
+                                    ))}
+                                </Bar>
+                            </BarChart>
+                        </ResponsiveContainer>
                     </div>
                 </div>
             </div>

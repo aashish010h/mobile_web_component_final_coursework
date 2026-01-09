@@ -84,7 +84,22 @@ const EditAsset = () => {
             if (error.response && error.response.status === 422) {
                 toast.error("Validation failed. Please check inputs.");
             } else {
-                toast.error("Update failed. Check file size or permissions.");
+                const res = error.response;
+
+                // 1. Check if the server sent a specific error message (like your 403 Forbidden text)
+                if (res?.data?.message) {
+                    toast.error(res.data.message);
+                }
+                // 2. Fallback for validation errors if no specific message is found
+                else if (res?.status === 422) {
+                    toast.error("Validation failed. Please check your inputs.");
+                }
+                // 3. Generic fallback for crashes or network issues
+                else {
+                    toast.error("Update failed. Something went wrong.");
+                }
+
+                console.error("Update Error:", error);
             }
         }
     };
