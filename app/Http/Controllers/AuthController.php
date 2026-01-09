@@ -18,6 +18,15 @@ class AuthController extends Controller
         $user = User::where('email', $request->email)->first();
 
         if (!$user || ! Hash::check($request->password, $user->password)) {
+            AuditLog::create([
+                'user_id'    => $user->id, // Unknown user
+                'action'     => 'LOGIN_FAILED',
+                'ip_address' => $request->ip(),
+                'details'    => [
+                    'email_attempted' => $request->email,
+                    'browser' => $request->userAgent()
+                ]
+            ]);
             throw ValidationException::withMessages([
                 'email' => ['The provided credentials are incorrect.'],
             ]);

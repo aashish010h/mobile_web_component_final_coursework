@@ -193,7 +193,7 @@ class KnowledgeAssetController extends Controller
     {
         $asset = KnowledgeAsset::findOrFail($id);
 
-        if ($asset->author_id !== auth()->id() && auth()->user()->role !== 'ADMIN') {
+        if (auth()->user()->role !== 'ADMIN') {
             return response()->json(['message' => 'Unauthorized'], 403);
         }
 

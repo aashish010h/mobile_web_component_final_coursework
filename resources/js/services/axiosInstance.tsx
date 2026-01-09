@@ -1,4 +1,5 @@
 import axios from "axios";
+import { toast } from "react-toastify";
 
 const axiosInstance = axios.create({
     baseURL: "/api/",
@@ -27,6 +28,14 @@ axiosInstance.interceptors.response.use(
         if (err.response?.status === 401) {
             // redirect to login page
             window.location.href = "/";
+        }
+        if (err.response?.status === 403) {
+            // redirect to login page
+
+            toast.error("Unauthorised Access");
+            setTimeout(() => {
+                window.location.href = "/dashboard";
+            }, 1200);
         }
         return Promise.reject(err);
     }
