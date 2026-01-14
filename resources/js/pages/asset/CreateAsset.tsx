@@ -50,7 +50,8 @@ const CreateAsset = () => {
                     getPolicies(),
                     getTags(),
                 ]);
-                setPolicies(policyData.filter((p) => p.status === "ACTIVE"));
+                console.log("policyd", policyData);
+                setPolicies(policyData);
                 setAvailableTags(tagData);
             } catch (e) {
                 console.error("Failed to load options");

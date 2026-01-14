@@ -36,7 +36,7 @@ class KnowledgeAssetController extends Controller
         $isAdmin = auth()->check() && (auth()->user()->role === 'ADMIN');
 
         if (!$request->status && !$isAdmin) {
-            $query->where('status', 'PUBLISHED');
+            //$query->where('status', 'PUBLISHED');
         } else {
             $query->when($request->status, function ($q, $status) {
                 $q->where('status', $status);
