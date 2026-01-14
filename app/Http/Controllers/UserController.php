@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\Notification;
 use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
@@ -34,6 +35,13 @@ class UserController extends Controller
             'department' => $validated['department'] ?? null,
             'is_active' => true,
             'locale' => 'en_GB', // Enforcing your UK requirement
+        ]);
+
+        Notification::create([
+            'user_id' => auth()->id(),
+            'type'    => 'success',
+            'message' => "Updated asset: {$user->name}.",
+            'is_read' => false,
         ]);
 
         // 3. Return 201 Created

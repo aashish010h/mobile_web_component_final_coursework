@@ -1,0 +1,107 @@
+/* Navbar.css */
+.notif-dropdown-container {
+    position: relative;
+    display: inline-block;
+}
+
+.notif-btn {
+    background: #f0f2f5;
+    border: none;
+    border-radius: 50%;
+    width: 42px;
+    height: 42px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    font-size: 1.2rem;
+}
+
+.notif-btn:hover {
+    background: #e4e6eb;
+}
+
+.notif-badge {
+    position: absolute;
+    top: -2px;
+    right: -2px;
+    background: #d90429;
+    color: white;
+    font-size: 0.7rem;
+    font-weight: bold;
+    min-width: 18px;
+    height: 18px;
+    padding: 2px;
+    border-radius: 50%;
+    border: 2px solid white;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.notif-menu {
+    position: absolute;
+    top: 120%;
+    right: 0;
+    width: 350px;
+    background: white;
+    box-shadow: 0 12px 28px rgba(0,0,0,0.2);
+    border-radius: 8px;
+    display: none;
+    z-index: 2000;
+    border: 1px solid #ddd;
+    overflow: hidden;
+}
+
+.notif-menu.show {
+    display: block;
+    animation: slideUp 0.2s ease-out;
+}
+
+.notif-header {
+    padding: 15px;
+    border-bottom: 1px solid #eee;
+    background: #f8f9fa;
+}
+
+.notif-header h6 {
+    margin: 0;
+    font-weight: 800;
+    color: #003366;
+}
+
+.notif-list {
+    max-height: 380px;
+    overflow-y: auto;
+}
+
+.notif-item {
+    padding: 15px;
+    border-bottom: 1px solid #f0f2f5;
+    background: white;
+}
+
+.notif-item .msg {
+    margin: 0;
+    font-size: 0.88rem;
+    color: #1c1e21;
+}
+
+.notif-item .time {
+    font-size: 0.7rem;
+    color: #888;
+    display: block;
+    margin-top: 4px;
+}
+
+.notif-empty {
+    padding: 40px 20px;
+    text-align: center;
+    color: #8a8d91;
+}
+
+@keyframes slideUp {
+    from { opacity: 0; transform: translateY(10px); }
+    to { opacity: 1; transform: translateY(0); }
+}

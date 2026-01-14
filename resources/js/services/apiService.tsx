@@ -41,3 +41,13 @@ export const deprecatePolicy = async (id) => {
 export const createPolicy = async (data) => {
     return axiosInstance.post("/policies", data);
 };
+
+export const getTags = async () => {
+    try {
+        const response = await axiosInstance.get(`/tags`);
+        return response.data; // This returns the array of tag objects
+    } catch (error) {
+        console.error("Error fetching tags:", error);
+        throw error;
+    }
+};

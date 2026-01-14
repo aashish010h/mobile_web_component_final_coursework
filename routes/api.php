@@ -9,6 +9,7 @@ use App\Http\Controllers\FileController;
 use App\Http\Controllers\GdprController;
 use App\Http\Controllers\KnowledgeAssetController;
 use App\Http\Controllers\PolicyController;
+use App\Http\Controllers\TagController;
 use App\Http\Controllers\UserController;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
@@ -81,6 +82,25 @@ Route::middleware(['auth:sanctum'])->group(function () {
         Route::patch('/policies/{id}/deprecate', [PolicyController::class, 'deprecate']);
     });
 
+    Route::get('/tags', [TagController::class, 'index']);
+
+    Route::middleware('auth:sanctum')->group(function () {
+        // Get unread notifications
+        Route::get('/notifications', function () {
+            return App\Models\Notification::where('user_id', auth()->id())
+                ->where('is_read', false)
+                ->latest()
+                ->get();
+        });
+
+        Route::post('/notifications/read-all', function () {
+            App\Models\Notification::where('user_id', auth()->id())
+                ->where('is_read', false)
+                ->update(['is_read' => true]);
+
+            return response()->json(['success' => true]);
+        });
+    });
 
     // --- 4. DANGER ZONE (Admin Only) ---
     // Allowed: Admin only

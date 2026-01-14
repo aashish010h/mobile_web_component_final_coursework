@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\KnowledgeAsset;
 use App\Http\Resources\KnowledgeAssetResource;
 use App\Models\AuditLog;
+use App\Models\Notification;
 use App\Services\GamificationService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -18,29 +19,40 @@ class KnowledgeAssetController extends Controller
     {
         $query = KnowledgeAsset::with(['author', 'tags', 'policy']);
 
-        // 1. Search by Title or Summary
+        // 1. Unified Search (Title, Summary, OR Tags)
         $query->when($request->search, function ($q, $search) {
             $q->where(function ($sub) use ($search) {
                 $sub->where('title', 'like', "%{$search}%")
-                    ->orWhere('summary', 'like', "%{$search}%");
+                    ->orWhere('summary', 'like', "%{$search}%")
+                    // Check for tags matching the search string
+                    ->orWhereHas('tags', function ($t) use ($search) {
+                        $t->where('name', 'like', "%{$search}%");
+                    });
             });
         });
 
-        // 2. Filter by Status (Default to PUBLISHED for normal users?)
-        // For Admin Dashboard, we show everything.
-        $query->when($request->status, function ($q, $status) {
-            $q->where('status', $status);
-        });
+        // 2. Filter by Status
+        // Standardizing to a simple column check to avoid "hasRole" errors
+        $isAdmin = auth()->check() && (auth()->user()->role === 'ADMIN');
 
-        // 3. Filter by Tag
+        if (!$request->status && !$isAdmin) {
+            $query->where('status', 'PUBLISHED');
+        } else {
+            $query->when($request->status, function ($q, $status) {
+                $q->where('status', $status);
+            });
+        }
+
+        // 3. Keep the specific tag_id filter 
+        // This is useful if they click a specific tag badge in the UI
         $query->when($request->tag_id, function ($q, $tagId) {
             $q->whereHas('tags', function ($t) use ($tagId) {
-                $t->where('id', $tagId);
+                $t->where('tags.id', $tagId);
             });
         });
 
         return KnowledgeAssetResource::collection(
-            $query->latest()->paginate(10)
+            $query->latest()->paginate(10)->withQueryString()
         );
     }
 
@@ -53,38 +65,48 @@ class KnowledgeAssetController extends Controller
             'title' => 'required|string|max:255',
             'summary' => 'required|string|max:500',
             'content_body' => 'nullable|string',
-            'tags' => 'array', // Array of Tag IDs
-            'tags.*' => 'exists:tags,id',
-            'file' => 'nullable|file|mimes:pdf,doc,docx,ppt,pptx|max:10240', // Max 10MB
+            'tags' => 'nullable|array', // Can be IDs or Strings
+            'file' => 'nullable|file|mimes:pdf,doc,docx,ppt,pptx|max:10240',
             'governance_policy_id' => 'nullable|exists:governance_policies,id',
         ]);
 
-        DB::beginTransaction(); // Ensure Atomicity
-
+        DB::beginTransaction();
         try {
-            // 1. Handle File Upload
             $filePath = null;
             if ($request->hasFile('file')) {
-                // Store in 'storage/app/public/assets'
                 $filePath = $request->file('file')->store('assets', 'public');
             }
-            $policyId = $request->governance_policy_id;
-            // 2. Create Record
+
             $asset = KnowledgeAsset::create([
                 'author_id' => auth()->id(),
                 'title' => $validated['title'],
-                'slug' => Str::slug($validated['title']) . '-' . time(), // Ensure unique slug
+                'slug' => Str::slug($validated['title']) . '-' . time(),
                 'summary' => $validated['summary'],
                 'content_body' => $validated['content_body'] ?? null,
                 'file_path' => $filePath,
-                'governance_policy_id' => $policyId,
-                'status' => 'DRAFT', // Always start as Draft
+                'governance_policy_id' => $request->governance_policy_id,
+                'status' => 'DRAFT',
             ]);
 
-            // 3. Sync Tags
-            if (!empty($validated['tags'])) {
-                $asset->tags()->sync($validated['tags']);
+            // --- ENHANCED TAG LOGIC ---
+            if (!empty($request->tags)) {
+                $tagIds = [];
+                foreach ($request->tags as $tagInput) {
+                    // If it's numeric, assume it's an existing ID
+                    if (is_numeric($tagInput)) {
+                        $tagIds[] = $tagInput;
+                    } else {
+                        // If it's a string, find or create the tag
+                        $newTag = \App\Models\Tag::firstOrCreate(
+                            ['name' => trim($tagInput)],
+                            ['category' => 'GENERAL'] // Default category
+                        );
+                        $tagIds[] = $newTag->id;
+                    }
+                }
+                $asset->tags()->sync($tagIds);
             }
+
             $gamification->awardPoints(auth()->user(), 10, 'ASSET_UPLOAD');
 
             AuditLog::create([
@@ -95,14 +117,18 @@ class KnowledgeAssetController extends Controller
                 'ip_address'  => $request->ip()
             ]);
 
-            DB::commit();
+            Notification::create([
+                'user_id' => auth()->id(),
+                'type'    => 'success',
+                'message' => "Successfully uploaded asset: {$asset->title}. It is currently in DRAFT.",
+                'is_read' => false,
+            ]);
 
+            DB::commit();
             return new KnowledgeAssetResource($asset);
         } catch (\Exception $e) {
             DB::rollBack();
-            // Cleanup file if DB failed
             if (isset($filePath)) Storage::disk('public')->delete($filePath);
-
             return response()->json(['message' => 'Asset creation failed: ' . $e->getMessage()], 500);
         }
     }
@@ -177,6 +203,13 @@ class KnowledgeAssetController extends Controller
                 'target_type' => KnowledgeAsset::class,
                 'target_id'   => $asset->id,
                 'ip_address'  => $request->ip()
+            ]);
+
+            Notification::create([
+                'user_id' => auth()->id(),
+                'type'    => 'success',
+                'message' => "Updated asset: {$asset->title}.",
+                'is_read' => false,
             ]);
             DB::commit();
             return new KnowledgeAssetResource($asset);

@@ -1,110 +1,176 @@
+import React, { useEffect, useState, useCallback } from "react";
+import { useNavigate } from "react-router-dom";
 import { logoutUser } from "@/services/authService";
 import { useAuthStore } from "@/store/useAuthStore";
-import React from "react";
-import { useNavigate } from "react-router-dom"; // Fixed import from 'react-router' to 'react-router-dom'
-import { toast } from "react-toastify";
+import axios from "axios";
+import "./navbar.css";
 
 const Navbar = () => {
     const navigate = useNavigate();
-    const { user, setUser } = useAuthStore(); // Ensure you clear store on logout
+    const { user, setUser } = useAuthStore();
+    const [notifications, setNotifications] = useState([]);
+    const [showDropdown, setShowDropdown] = useState(false);
+
+    // Fetch notifications from Laravel
+    const fetchNotifications = useCallback(async () => {
+        try {
+            const token = localStorage.getItem("token");
+            if (!token) return;
+
+            const res = await axios.get("/api/notifications", {
+                headers: { Authorization: `Bearer ${token}` },
+            });
+            const data = res.data.data || res.data;
+            setNotifications(Array.isArray(data) ? data : []);
+        } catch (error) {
+            console.error("Failed to fetch notifications", error);
+        }
+    }, []);
+
+    // Logic to mark all as read on backend and clear UI
+    const handleMarkAllAsRead = async () => {
+        if (notifications.length === 0) return;
+        try {
+            const token = localStorage.getItem("token");
+            await axios.post(
+                "/api/notifications/read-all",
+                {},
+                {
+                    headers: { Authorization: `Bearer ${token}` },
+                }
+            );
+            setNotifications([]); // Clear badge and list
+        } catch (err) {
+            console.error("Mark all as read failed", err);
+        }
+    };
+
+    // Toggle dropdown and handle closing logic
+    const toggleDropdown = (e) => {
+        e.stopPropagation();
+        if (showDropdown) {
+            handleMarkAllAsRead(); // Mark read when manually closing via button
+        }
+        setShowDropdown(!showDropdown);
+    };
+
+    useEffect(() => {
+        fetchNotifications();
+        const interval = setInterval(fetchNotifications, 60000);
+
+        const closeOnOutsideClick = () => {
+            if (showDropdown) {
+                handleMarkAllAsRead(); // Mark read when clicking anywhere else
+                setShowDropdown(false);
+            }
+        };
+
+        window.addEventListener("click", closeOnOutsideClick);
+        return () => {
+            clearInterval(interval);
+            window.removeEventListener("click", closeOnOutsideClick);
+        };
+    }, [showDropdown, notifications.length, fetchNotifications]);
 
     const handleLogout = async () => {
         try {
-            await logoutUser(); // Call API to revoke token
-            localStorage.removeItem("token"); // Clear local storage
-            setUser(null); // Clear global state
-            toast.success("Logged out successfully");
+            await logoutUser();
+            localStorage.removeItem("token");
+            setUser(null);
             navigate("/");
         } catch (error) {
-            console.error(error);
-            // Force logout on error anyway to prevent stuck state
             localStorage.removeItem("token");
             setUser(null);
             navigate("/");
         }
     };
 
-    // Helper to get initials (e.g., "Aashish Giri" -> "AG")
     const getInitials = (name) => {
         if (!name) return "U";
         return name
             .split(" ")
             .map((n) => n[0])
             .join("")
-            .toUpperCase()
-            .substring(0, 2);
+            .toUpperCase();
     };
 
     return (
-        <nav className="navbar navbar-expand navbar-white bg-white border-bottom sticky-top shadow-sm px-4 py-3">
+        <nav className="navbar navbar-expand bg-white border-bottom sticky-top shadow-sm px-4 py-2">
             <div className="container-fluid">
-                {/* Mobile Toggle (Optional depending on your sidebar setup) */}
-                <button
-                    className="btn btn-light d-lg-none me-2"
-                    id="sidebarToggle"
-                >
-                    ☰
-                </button>
+                <div className="ms-auto d-flex align-items-center">
+                    {/* NOTIFICATION DROP-DOWN */}
+                    <div className="notif-dropdown-container me-4">
+                        <button className="notif-btn" onClick={toggleDropdown}>
+                            <span>🔔</span>
+                            {notifications.length > 0 && (
+                                <span className="notif-badge">
+                                    {notifications.length}
+                                </span>
+                            )}
+                        </button>
 
-                {/* Right Side: User Profile & Actions */}
-                <div
-                    className="collapse navbar-collapse"
-                    id="navbarSupportedContent"
-                >
-                    <ul className="navbar-nav ms-auto align-items-center">
-                        {/* User Info Block */}
-                        <li className="nav-item d-flex align-items-center me-4">
-                            <div className="text-end me-3 d-none d-md-block">
-                                <div
-                                    className="fw-bold text-dark"
-                                    style={{ fontSize: "0.95rem" }}
-                                >
-                                    {user?.data.name || "Guest User"}
-                                </div>
-                                <div
-                                    className="badge bg-light text-secondary border fw-normal"
-                                    style={{ fontSize: "0.7rem" }}
-                                >
-                                    {user?.data.role?.replace("_", " ") ||
-                                        "N/A"}
-                                </div>
+                        <div
+                            className={`notif-menu ${
+                                showDropdown ? "show" : ""
+                            }`}
+                        >
+                            <div className="notif-header">
+                                <h6>Notifications</h6>
                             </div>
+                            <div className="notif-list">
+                                {notifications.length === 0 ? (
+                                    <div className="notif-empty">
+                                        <p className="mb-0">No new updates</p>
+                                    </div>
+                                ) : (
+                                    notifications.map((n) => (
+                                        <div key={n.id} className="notif-item">
+                                            <p className="msg">{n.message}</p>
+                                            <span className="time">
+                                                {new Date(
+                                                    n.created_at
+                                                ).toLocaleTimeString("en-GB", {
+                                                    hour: "2-digit",
+                                                    minute: "2-digit",
+                                                })}
+                                            </span>
+                                        </div>
+                                    ))
+                                )}
+                            </div>
+                        </div>
+                    </div>
 
-                            {/* Avatar Circle */}
+                    {/* PROFILE SECTION */}
+                    <div className="d-flex align-items-center ps-4 border-start">
+                        <div className="text-end me-3 d-none d-md-block">
+                            <div className="fw-bold small">
+                                {user?.data?.name || "Aashish Giri"}
+                            </div>
                             <div
-                                className="rounded-circle d-flex align-items-center justify-content-center text-white fw-bold shadow-sm"
-                                style={{
-                                    width: "40px",
-                                    height: "40px",
-                                    backgroundColor: "#003366", // Your theme color
-                                    fontSize: "0.9rem",
-                                }}
+                                className="text-muted"
+                                style={{ fontSize: "0.7rem" }}
                             >
-                                {getInitials(user?.data.name)}
+                                {user?.data?.role || "Student"}
                             </div>
-                        </li>
-
-                        {/* Divider */}
-                        <li
-                            className="nav-item d-none d-md-block border-start mx-2"
-                            style={{ height: "25px" }}
-                        ></li>
-
-                        {/* Logout Button */}
-                        <li className="nav-item ms-2">
-                            <button
-                                className="btn btn-outline-danger btn-sm d-flex align-items-center gap-2"
-                                onClick={handleLogout}
-                                style={{
-                                    borderRadius: "20px",
-                                    padding: "0.4rem 1rem",
-                                }}
-                            >
-                                <span>Logout</span>
-                                <span style={{ fontSize: "0.8rem" }}>🚪</span>
-                            </button>
-                        </li>
-                    </ul>
+                        </div>
+                        <div
+                            className="rounded-circle d-flex align-items-center justify-content-center text-white fw-bold me-3 shadow-sm"
+                            style={{
+                                width: "38px",
+                                height: "38px",
+                                backgroundColor: "#003366",
+                            }}
+                        >
+                            {getInitials(user?.data?.name)}
+                        </div>
+                        <button
+                            className="btn btn-outline-danger btn-sm rounded-pill px-3"
+                            onClick={handleLogout}
+                        >
+                            Logout
+                        </button>
+                    </div>
                 </div>
             </div>
         </nav>

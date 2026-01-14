@@ -39,6 +39,7 @@ const ViewAsset = () => {
         const fetchAsset = async () => {
             try {
                 const res = await getAsset(id);
+                // Ensure we handle both resource wrappers and direct data
                 setAsset(res.data || res);
             } catch (error) {
                 toast.error("Asset not found or access denied.");
@@ -85,13 +86,13 @@ const ViewAsset = () => {
                 Loading asset details...
             </div>
         );
+
     if (!asset) return null;
 
     return (
         <div className="container mt-4 mb-5">
             <ToastContainer />
 
-            {/* Breadcrumb / Back Link */}
             <div className="mb-4 d-flex justify-content-between align-items-center">
                 <Link
                     to="/dashboard/assets"
@@ -116,11 +117,10 @@ const ViewAsset = () => {
             </div>
 
             <div className="row g-4">
-                {/* LEFT COLUMN: Main Content */}
+                {/* LEFT COLUMN */}
                 <div className="col-lg-8">
                     <div className="card shadow-sm border-0 rounded-3 h-100">
                         <div className="card-body p-4 p-md-5">
-                            {/* [NEW] Rejection Reason Alert */}
                             {asset.status === "DRAFT" &&
                                 asset.rejection_reason && (
                                     <div className="alert alert-danger border-danger d-flex align-items-start gap-3 mb-4">
@@ -136,7 +136,6 @@ const ViewAsset = () => {
                                     </div>
                                 )}
 
-                            {/* Title Header */}
                             <div className="mb-4 border-bottom pb-4">
                                 <div className="d-flex align-items-start justify-content-between gap-3">
                                     <h2 className="fw-bold text-dark mb-0">
@@ -153,7 +152,6 @@ const ViewAsset = () => {
                                 </div>
                             </div>
 
-                            {/* Summary Box */}
                             <div className="bg-light p-4 rounded-3 mb-4 border-start border-4 border-primary">
                                 <h6 className="text-primary fw-bold mb-2">
                                     Executive Summary
@@ -166,7 +164,6 @@ const ViewAsset = () => {
                                 </p>
                             </div>
 
-                            {/* Main Body */}
                             <div className="mt-4">
                                 <h5 className="fw-bold mb-3">Asset Details</h5>
                                 {asset.content_body ? (
@@ -187,9 +184,8 @@ const ViewAsset = () => {
                     </div>
                 </div>
 
-                {/* RIGHT COLUMN: Metadata & Actions */}
+                {/* RIGHT COLUMN */}
                 <div className="col-lg-4">
-                    {/* [NEW] Compliance / Policy Link Section */}
                     <div className="card shadow-sm border-0 rounded-3 mb-3">
                         <div className="card-body p-4">
                             <h6 className="fw-bold mb-3">
@@ -209,17 +205,17 @@ const ViewAsset = () => {
                                 </div>
                             ) : (
                                 <div className="text-muted small fst-italic">
-                                    This asset is not explicitly linked to a
-                                    specific governance policy.
+                                    Not linked to a specific policy.
                                 </div>
                             )}
                         </div>
                     </div>
 
-                    {/* File Download Card */}
                     <div className="card shadow-sm border-0 rounded-3 mb-3 bg-white">
-                        <div className="card-body p-4">
-                            <h6 className="fw-bold mb-3">Attached File</h6>
+                        <div className="card-body p-4 text-center">
+                            <h6 className="fw-bold mb-3 text-start">
+                                Attached File
+                            </h6>
                             {asset.download_url ? (
                                 <div className="d-grid">
                                     <button
@@ -232,26 +228,21 @@ const ViewAsset = () => {
                                     >
                                         ⬇️ Download Document
                                     </button>
-                                    <div className="text-center mt-2 small text-muted">
-                                        Securely encrypted
-                                    </div>
                                 </div>
                             ) : (
                                 <div className="alert alert-warning mb-0 small">
-                                    No file attached to this record.
+                                    No file attached.
                                 </div>
                             )}
                         </div>
                     </div>
 
-                    {/* Metadata Card */}
                     <div className="card shadow-sm border-0 rounded-3">
                         <div className="card-body p-4">
                             <h6 className="fw-bold mb-4 border-bottom pb-2">
                                 Data Points
                             </h6>
 
-                            {/* Author & Badges */}
                             <div className="mb-3">
                                 <div style={styles.metaLabel}>Author</div>
                                 <div className="d-flex align-items-center mt-1">
@@ -273,23 +264,10 @@ const ViewAsset = () => {
                                             {asset.author?.department ||
                                                 "Unassigned"}
                                         </div>
-                                        {/* [NEW] Author Badges */}
-                                        <div className="d-flex gap-1 mt-1">
-                                            {asset.author?.badges?.map((b) => (
-                                                <span
-                                                    key={b.id}
-                                                    title={b.name}
-                                                    style={{ cursor: "help" }}
-                                                >
-                                                    {b.icon}
-                                                </span>
-                                            ))}
-                                        </div>
                                     </div>
                                 </div>
                             </div>
 
-                            {/* Dates */}
                             <div className="row mb-3">
                                 <div className="col-6">
                                     <div style={styles.metaLabel}>Created</div>
@@ -300,9 +278,7 @@ const ViewAsset = () => {
                                     </div>
                                 </div>
                                 <div className="col-6">
-                                    <div style={styles.metaLabel}>
-                                        Last Updated
-                                    </div>
+                                    <div style={styles.metaLabel}>Updated</div>
                                     <div className="fw-medium text-dark">
                                         {new Date(
                                             asset.updated_at
@@ -311,19 +287,26 @@ const ViewAsset = () => {
                                 </div>
                             </div>
 
-                            {/* Tags */}
+                            {/* Updated Tags Section */}
                             <div>
                                 <div style={styles.metaLabel} className="mb-2">
                                     Classification Tags
                                 </div>
-                                <div className="d-flex flex-wrap gap-1">
+                                <div className="d-flex flex-wrap gap-2">
                                     {asset.tags && asset.tags.length > 0 ? (
                                         asset.tags.map((tag, i) => (
                                             <span
-                                                key={i}
-                                                className="badge bg-info bg-opacity-10 text-dark border"
+                                                key={tag.id || i}
+                                                className="badge border text-dark fw-medium"
+                                                style={{
+                                                    backgroundColor:
+                                                        "rgba(0, 51, 102, 0.08)",
+                                                    borderColor:
+                                                        "rgba(0, 51, 102, 0.2)",
+                                                    fontSize: "0.75rem",
+                                                }}
                                             >
-                                                {tag}
+                                                🏷️ {tag.name || tag}
                                             </span>
                                         ))
                                     ) : (

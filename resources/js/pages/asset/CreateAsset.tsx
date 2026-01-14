@@ -4,10 +4,16 @@ import { useForm } from "react-hook-form";
 import { ToastContainer, toast } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 import { createAsset } from "@/services/assetService";
-import { getPolicies } from "@/services/apiService";
+import { getPolicies, getTags } from "@/services/apiService";
 
 const CreateAsset = () => {
     const navigate = useNavigate();
+
+    // --- State ---
+    const [policies, setPolicies] = useState([]);
+    const [availableTags, setAvailableTags] = useState([]);
+    const [newTagName, setNewTagName] = useState("");
+    const [customTags, setCustomTags] = useState([]);
 
     // --- React Hook Form ---
     const {
@@ -17,10 +23,9 @@ const CreateAsset = () => {
         formState: { errors, isSubmitting },
     } = useForm();
 
-    // Watch file input to show selected filename
     const selectedFile = watch("file");
 
-    // --- Styles ---
+    // --- Styles (Original Kept) ---
     const styles = {
         cardHeader: { backgroundColor: "#003366", color: "#ffffff" },
         btnPrimary: {
@@ -37,60 +42,66 @@ const CreateAsset = () => {
         },
     };
 
+    // --- Load Data ---
+    useEffect(() => {
+        const loadInitialData = async () => {
+            try {
+                const [policyData, tagData] = await Promise.all([
+                    getPolicies(),
+                    getTags(),
+                ]);
+                setPolicies(policyData.filter((p) => p.status === "ACTIVE"));
+                setAvailableTags(tagData);
+            } catch (e) {
+                console.error("Failed to load options");
+            }
+        };
+        loadInitialData();
+    }, []);
+
+    // --- Custom Tag Logic ---
+    const handleAddCustomTag = () => {
+        const tag = newTagName.trim();
+        if (tag && !customTags.includes(tag)) {
+            setCustomTags([...customTags, tag]);
+            setNewTagName("");
+        }
+    };
+
+    const removeCustomTag = (tagToRemove) => {
+        setCustomTags(customTags.filter((t) => t !== tagToRemove));
+    };
+
     // --- Submit Handler ---
     const onSubmit = async (data) => {
         const formData = new FormData();
 
-        // 1. Append Text Data
         formData.append("title", data.title);
         formData.append("summary", data.summary);
         formData.append("governance_policy_id", data.governance_policy_id);
 
-        // 2. Append File (only if selected)
         if (data.file && data.file[0]) {
             formData.append("file", data.file[0]);
         }
 
-        // 3. Append Tags (Hardcoded for now - you can fetch these from API later)
-        // Example: Sending Tag ID 1 (General) if you have seeded your DB
-        // formData.append("tags[]", "1");
+        // Combine existing tag IDs and new tag strings
+        const allTags = [...(data.tags || []), ...customTags];
+        allTags.forEach((tag) => {
+            formData.append("tags[]", tag);
+        });
 
         try {
             await createAsset(formData);
-
             toast.success("Asset uploaded successfully!");
-
-            // Redirect back to list
             setTimeout(() => navigate("/dashboard/assets"), 1500);
         } catch (error) {
-            if (error.response && error.response.status === 422) {
-                const apiErrors = error.response.data.errors;
+            if (error.response?.status === 422) {
                 toast.error("Validation failed.");
-                // You could map these to setError like in the User form
-                console.log(apiErrors);
             } else {
-                toast.error(
-                    "Upload failed. Please check the file size (Max 10MB)."
-                );
+                toast.error("Upload failed. Max size 10MB.");
             }
         }
     };
-
-    const [policies, setPolicies] = useState([]);
-
-    // 2. Fetch Policies on load
-    useEffect(() => {
-        const loadPolicies = async () => {
-            try {
-                const data = await getPolicies();
-                // Only show ACTIVE policies to link against? Or all? Usually Active.
-                setPolicies(data.filter((p) => p.status === "ACTIVE"));
-            } catch (e) {
-                console.error("Failed to load policies");
-            }
-        };
-        loadPolicies();
-    }, []);
 
     return (
         <div className="container mt-5 mb-5">
@@ -122,7 +133,6 @@ const CreateAsset = () => {
 
                         <div className="card-body p-4 p-md-5">
                             <form onSubmit={handleSubmit(onSubmit)}>
-                                {/* 1. Document Details */}
                                 <h6 className="text-uppercase text-muted fw-bold small mb-3 border-bottom pb-2">
                                     Document Details
                                 </h6>
@@ -159,7 +169,7 @@ const CreateAsset = () => {
                                     >
                                         <option value="">
                                             -- Does not adhere to specific
-                                            policy --Guest User
+                                            policy --
                                         </option>
                                         {policies?.map((policy) => (
                                             <option
@@ -170,9 +180,90 @@ const CreateAsset = () => {
                                             </option>
                                         ))}
                                     </select>
+                                </div>
+
+                                {/* --- TAGS SECTION --- */}
+                                <div className="mb-4">
+                                    <label className="form-label fw-semibold">
+                                        Tags & Taxonomy
+                                    </label>
+                                    <div
+                                        className="p-3 border rounded bg-light mb-2"
+                                        style={{
+                                            maxHeight: "150px",
+                                            overflowY: "auto",
+                                        }}
+                                    >
+                                        {/* Existing Tags */}
+                                        {availableTags.map((tag) => (
+                                            <div
+                                                key={tag.id}
+                                                className="form-check form-check-inline"
+                                            >
+                                                <input
+                                                    className="form-check-input"
+                                                    type="checkbox"
+                                                    id={`tag-${tag.id}`}
+                                                    value={tag.id}
+                                                    {...register("tags")}
+                                                />
+                                                <label
+                                                    className="form-check-label"
+                                                    htmlFor={`tag-${tag.id}`}
+                                                >
+                                                    {tag.name}
+                                                </label>
+                                            </div>
+                                        ))}
+
+                                        {/* Custom Tags UI */}
+                                        {customTags.map((tag, index) => (
+                                            <span
+                                                key={index}
+                                                className="badge bg-primary me-2 mb-1"
+                                            >
+                                                {tag}
+                                                <button
+                                                    type="button"
+                                                    className="btn-close btn-close-white ms-2"
+                                                    style={{
+                                                        fontSize: "0.5rem",
+                                                    }}
+                                                    onClick={() =>
+                                                        removeCustomTag(tag)
+                                                    }
+                                                ></button>
+                                            </span>
+                                        ))}
+                                    </div>
+
+                                    <div className="input-group">
+                                        <input
+                                            type="text"
+                                            className="form-control"
+                                            placeholder="Add a new tag (e.g. AI, Finance)"
+                                            value={newTagName}
+                                            onChange={(e) =>
+                                                setNewTagName(e.target.value)
+                                            }
+                                            onKeyDown={(e) => {
+                                                if (e.key === "Enter") {
+                                                    e.preventDefault();
+                                                    handleAddCustomTag();
+                                                }
+                                            }}
+                                        />
+                                        <button
+                                            className="btn btn-outline-secondary"
+                                            type="button"
+                                            onClick={handleAddCustomTag}
+                                        >
+                                            + Add
+                                        </button>
+                                    </div>
                                     <div className="form-text">
-                                        Does this document support a specific
-                                        organizational policy?
+                                        Select existing tags or type to create
+                                        new ones.
                                     </div>
                                 </div>
 
@@ -200,12 +291,8 @@ const CreateAsset = () => {
                                             {errors.summary.message}
                                         </div>
                                     )}
-                                    <div className="form-text text-end small">
-                                        Max 500 chars
-                                    </div>
                                 </div>
 
-                                {/* 2. File Upload Zone */}
                                 <h6 className="text-uppercase text-muted fw-bold small mb-4 mt-4 border-bottom pb-2">
                                     Attachment
                                 </h6>
@@ -222,10 +309,8 @@ const CreateAsset = () => {
                                             accept=".pdf,.doc,.docx,.ppt,.pptx"
                                             {...register("file")}
                                         />
-
-                                        <div className="pointer-events-none">
-                                            {selectedFile &&
-                                            selectedFile.length > 0 ? (
+                                        <div>
+                                            {selectedFile?.[0] ? (
                                                 <div className="text-success">
                                                     <div className="fs-1 mb-2">
                                                         📄
@@ -260,13 +345,8 @@ const CreateAsset = () => {
                                             )}
                                         </div>
                                     </div>
-                                    <div className="form-text mt-2">
-                                        Note: All uploads are automatically
-                                        scanned and encrypted.
-                                    </div>
                                 </div>
 
-                                {/* Actions */}
                                 <div className="d-flex justify-content-end gap-2 pt-3 border-top">
                                     <Link
                                         to="/dashboard/assets"
